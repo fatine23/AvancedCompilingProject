@@ -5,20 +5,22 @@ exp : SIGNED_NUMBER              -> exp_nombre
 | IDENTIFIER                     -> exp_var
 | exp OPBIN exp                  -> exp_opbin
 | "(" exp ")"                    -> exp_par
-com : IDENTIFIER "=" exp ";"     -> assignation
+com : IDENTIFIER "=" exp ";"         -> assignation
 | "if" "(" exp ")" "{" bcom "}"  -> if
 | "while" "(" exp ")" "{" bcom "}"  -> while
 | "print" "(" exp ")"               -> print
 bcom : (com)*
+struct : "struct" IDENTIFIER "{" "}" ";"
 prg : "main" "(" var_list ")" "{" bcom "return" "(" exp ")" ";"  "}"
 var_list :                       -> vide
 | IDENTIFIER (","  IDENTIFIER)*  -> aumoinsune
 IDENTIFIER : /[a-zA-Z][a-zA-Z0-9]*/
+TYPE: /["int" "float" "double" "char" IDENTIFIER]/
 OPBIN : /[+\-*>]/
 %import common.WS
 %import common.SIGNED_NUMBER
 %ignore WS
-""",start="prg")
+""",start="com")
 
 op = {'+' : 'add', '-' : 'sub'}
 
@@ -106,7 +108,9 @@ fin{n} : nop
         """
 
 def pp_com(c):
-    if c.data == "assignation":
+    if(c.data == "declaration"):
+        print("Declaration")
+    elif c.data == "assignation":
         return f"{c.children[0].value} = {pp_exp(c.children[1])};"
     elif c.data == "if":
         x = f"\n{pp_bcom(c.children[1])}"
@@ -179,17 +183,14 @@ def pp_prg(p):
     R = pp_exp(p.children[2])
     return "main( %s ) { %s return(%s);\n}" % (L, C, R)
 
+def pp_struct(s):
+    print(s.children[0])
 
-ast = grammaire.parse("""main(x,y){
-        while(x){
-            x = x - 1;
-            y = y + 1;
-        }
-    return (y);
-}
+
+ast = grammaire.parse("""int asdasd;
 """)
-asm = asm_prg(ast)
-f = open("ouf.asm", "w")
-f.write(asm)
-f.close()
+asm = pp_com(ast)
+#f = open("ouf.asm", "w")
+#f.write(asm)
+#f.close()
 
