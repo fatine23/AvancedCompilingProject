@@ -5,22 +5,26 @@ exp : SIGNED_NUMBER              -> exp_nombre
 | IDENTIFIER                     -> exp_var
 | exp OPBIN exp                  -> exp_opbin
 | "(" exp ")"                    -> exp_par
-com : IDENTIFIER "=" exp ";"         -> assignation
+com : dec                        -> declaration
+| IDENTIFIER "=" exp ";"         -> assignation
 | "if" "(" exp ")" "{" bcom "}"  -> if
 | "while" "(" exp ")" "{" bcom "}"  -> while
 | "print" "(" exp ")"               -> print
+bdec : (dec)*
 bcom : (com)*
+dec : TYPE IDENTIFIER ";" -> declaration
+| TYPE IDENTIFIER "=" exp ";" -> declaration_expresion
 struct : "struct" IDENTIFIER "{" "}" ";"
 prg : "main" "(" var_list ")" "{" bcom "return" "(" exp ")" ";"  "}"
 var_list :                       -> vide
 | IDENTIFIER (","  IDENTIFIER)*  -> aumoinsune
 IDENTIFIER : /[a-zA-Z][a-zA-Z0-9]*/
-TYPE: /["int" "float" "double" "char" IDENTIFIER]/
+TYPE : "int" | "double" | "float" | "bool" | "char" | "long"
 OPBIN : /[+\-*>]/
 %import common.WS
 %import common.SIGNED_NUMBER
 %ignore WS
-""",start="com")
+""",start="bcom")
 
 op = {'+' : 'add', '-' : 'sub'}
 
@@ -186,10 +190,22 @@ def pp_prg(p):
 def pp_struct(s):
     print(s.children[0])
 
+def pp_dec(d):
+    print(d)
 
-ast = grammaire.parse("""int asdasd;
+def pp_bdec(bdec):
+    print(bdec)
+
+ast = grammaire.parse("""
+int asd;
+asd = 10;
+int asd1 = 5;
+double asd2;
+float asd3;
+bool isEmpty;
 """)
-asm = pp_com(ast)
+asm = pp_dec(ast)
+print(asm)
 #f = open("ouf.asm", "w")
 #f.write(asm)
 #f.close()
