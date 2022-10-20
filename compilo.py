@@ -3,28 +3,40 @@ import lark
 grammaire = lark.Lark(r"""
 exp : SIGNED_NUMBER              -> exp_nombre
 | IDENTIFIER                     -> exp_var
+| IDENTIFIER "." IDENTIFIER      -> exp_var_struct
 | exp OPBIN exp                  -> exp_opbin
 | "(" exp ")"                    -> exp_par
+| IDENTIFIER "(" var_list ")"    -> exp_function
 com : dec                        -> declaration
 | IDENTIFIER "=" exp ";"         -> assignation
+| IDENTIFIER "." IDENTIFIER "=" exp ";" -> assignation_struct_var
 | "if" "(" exp ")" "{" bcom "}"  -> if
 | "while" "(" exp ")" "{" bcom "}"  -> while
-| "print" "(" exp ")"               -> print
+| "print" "(" exp ")" ";"              -> print
+| "printf" "(" exp ")" ";"             -> printf
+| IDENTIFIER "(" exp_list ")" ";"
 bdec : (dec)*
 bcom : (com)*
 dec : TYPE IDENTIFIER ";" -> declaration
 | TYPE IDENTIFIER "=" exp ";" -> declaration_expresion
-struct : "struct" IDENTIFIER "{" "}" ";"
-prg : "main" "(" var_list ")" "{" bcom "return" "(" exp ")" ";"  "}"
+| "struct" IDENTIFIER IDENTIFIER ";" -> declaration_struct
+struct : "struct" IDENTIFIER "{" bdec "}" ";"
+function : TYPE IDENTIFIER "(" var_list ")" "{" bcom "return" exp ";" "}" 
+| "void" IDENTIFIER "(" var_list ")" "{" bcom "}" 
+bstruct : (struct)*
+bfunction : (function)*
+prg : bstruct bfunction "int" "main" "(" var_list ")" "{" bcom "return" "(" exp ")" ";"  "}"
+exp_list: -> vide
+| exp ("," exp)*  -> aumoinsune
 var_list :                       -> vide
-| IDENTIFIER (","  IDENTIFIER)*  -> aumoinsune
+| (TYPE IDENTIFIER) | ("struct" IDENTIFIER IDENTIFIER) ("," (TYPE IDENTIFIER) | ("struct" IDENTIFIER IDENTIFIER))*  -> aumoinsune
 IDENTIFIER : /[a-zA-Z][a-zA-Z0-9]*/
-TYPE : "int" | "double" | "float" | "bool" | "char" | "long"
+TYPE : "int" | "double" | "float" | "bool" | "char" | "long" | "struct" IDENTIFIER
 OPBIN : /[+\-*>]/
 %import common.WS
 %import common.SIGNED_NUMBER
 %ignore WS
-""",start="bcom")
+""",start="prg")
 
 op = {'+' : 'add', '-' : 'sub'}
 
@@ -188,7 +200,7 @@ def pp_prg(p):
     return "main( %s ) { %s return(%s);\n}" % (L, C, R)
 
 def pp_struct(s):
-    print(s.children[0])
+    print(s)
 
 def pp_dec(d):
     print(d)
@@ -196,13 +208,38 @@ def pp_dec(d):
 def pp_bdec(bdec):
     print(bdec)
 
+def pp_function(f):
+    print(f)
+
 ast = grammaire.parse("""
-int asd;
-asd = 10;
-int asd1 = 5;
-double asd2;
-float asd3;
-bool isEmpty;
+struct Books {
+   char  title;
+   char  author;
+   char  subject;
+   int   bookId;
+};
+
+void printBook( struct Books book ) {
+
+   printf( book.title);
+   printf( book.author);
+   printf( book.subject);
+   printf( book.bookId);
+}
+
+int main( ) {
+
+   struct Books Book1;        
+   struct Books Book2;        
+   Book1.bookId = 6495407;
+   Book2.bookId = 6495700;
+ 
+   printBook( Book1 );
+
+   printBook( Book2 );
+
+   return (0);
+}
 """)
 asm = pp_dec(ast)
 print(asm)
