@@ -1,4 +1,5 @@
 import lark
+from numpy import equal
 
 grammaire = lark.Lark(r"""
 exp : SIGNED_NUMBER              -> exp_nombre
