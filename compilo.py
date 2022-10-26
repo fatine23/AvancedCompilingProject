@@ -22,17 +22,17 @@ dec : TYPE IDENTIFIER ";" -> declaration
 | TYPE IDENTIFIER "=" exp ";" -> declaration_expresion
 | "struct" IDENTIFIER IDENTIFIER ";" -> declaration_struct
 struct : "struct" IDENTIFIER "{" bdec "}" ";"
-function : TYPE IDENTIFIER "(" var_list ")" "{" bcom "return" exp ";" "}" 
-| "void" IDENTIFIER "(" var_list ")" "{" bcom "}" 
+function : TYPE IDENTIFIER "(" var_list ")" "{" bcom "return" exp ";" "}" -> function_return
+| "void" IDENTIFIER "(" var_list ")" "{" bcom "}"  -> function_void
 bstruct : (struct)*
 bfunction : (function)*
-prg : bstruct bfunction "int" "main" "(" var_list ")" "{" bcom "return" "(" exp ")" ";"  "}"
+prg : bstruct bfunction "int" "main" "(" var_list ")" "{" bcom "return" "(" exp ")" ";"  "}" 
 exp_list: -> vide
 | exp ("," exp)*  -> aumoinsune
 var_list :                       -> vide
-| (TYPE IDENTIFIER) | ("struct" IDENTIFIER IDENTIFIER) ("," (TYPE IDENTIFIER) | ("struct" IDENTIFIER IDENTIFIER))*  -> aumoinsune
+| (TYPE IDENTIFIER)("," (TYPE IDENTIFIER))*  -> aumoinsune
 IDENTIFIER : /[a-zA-Z][a-zA-Z0-9]*/
-TYPE : "int" | "double" | "float" | "bool" | "char" | "long" | "struct" IDENTIFIER
+TYPE : "int" | "double" | "float" | "bool" | "char" | "long" | IDENTIFIER
 OPBIN : /[+\-*>]/
 %import common.WS
 %import common.SIGNED_NUMBER
@@ -163,7 +163,10 @@ def vars_bcom(bc):
     return S
 
 def pp_var_list(vl):
-    return ", ".join([t.value for t in vl.children])
+    S=[]
+    for t in range (len(vl.children)//2):
+        S.append(vl.children[2*t].value + " " + vl.children[(2*t)+1].value)
+    return ", ".join([t for t in S])
 
 def asm_prg(p):
     f = open("moule.asm")
@@ -195,24 +198,57 @@ def vars_prg(p):
     return L | C | R
 
 def pp_prg(p):
-    L = pp_var_list(p.children[0])
-    C = pp_bcom(p.children[1])
-    R = pp_exp(p.children[2])
-    return "main( %s ) { %s return(%s);\n}" % (L, C, R)
+    print(pp_struct(p.children[0].children[0]))
+    print(pp_bfunction(p.children[1]))
+    print ((p.children[3]))
+
+    
+    #L = pp_var_list(p.children[0])
+    #C = pp_bcom(p.children[1])
+    #R = pp_exp(p.children[2])
+    #print (p)
+    return 
+    #"main( %s ) { %s return(%s);\n}" % (L, C, R)
 
 def pp_struct(s):
-    print(s)
+
+    Y=s.children[0]
+    L=pp_bdec(s.children[1])
+    return "struct %s {\n%s \n };" % (Y,L)
+
+def pp_bstruct(bs):
+    return "\n".join([pp_struct(d) for d in bs.children])
+
 
 def pp_dec(d):
-    print(d)
+    
+    return f"{(d.children[0])} {(d.children[1])};"
+    
 
 def pp_bdec(bdec):
-    print(bdec)
+    return "\n".join([pp_dec(d) for d in bdec.children])
 
 def pp_function(f):
-    print(f)
+    if f.data == "function_void":
+        N=f.children[0]
+        L = pp_var_list(f.children[1])
+        B = pp_bcom(f.children[2])
+        return "void %s ( %s ) {\n %s \n}" % (N, L, B)
+    if f.data =="function_return":
+        A=f.children[0]
+        B=f.children[1]
+        C=pp_var_list(f.children[2])
+        D=pp_bcom(f.children[3])
+        E=pp_var_list(f.children[4])
+        return "%s %s ( %s ) {\n%s \nreturn %s;\n}" % (A, B, C,D,E)
+def pp_bfunction(bf):
+    return "\n".join([pp_function(d) for d in bf.children])
+
 
 ast = grammaire.parse("""
+   
+
+
 struct Books {
    char  title;
    char  author;
@@ -220,15 +256,12 @@ struct Books {
    int   bookId;
 };
 
-void printBook( struct Books book ) {
+void printBook( Books book ) {
 
-   printf( book.title);
-   printf( book.author);
-   printf( book.subject);
-   printf( book.bookId);
+
 }
 
-int main( ) {
+int main(int A,int B ) {
 
    struct Books Book1;        
    struct Books Book2;        
@@ -241,8 +274,10 @@ int main( ) {
 
    return (0);
 }
+
+
 """)
-asm = pp_dec(ast)
+asm = pp_prg(ast)
 print(asm)
 #f = open("ouf.asm", "w")
 #f.write(asm)
