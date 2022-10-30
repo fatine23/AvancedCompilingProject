@@ -2,12 +2,14 @@ import lark
 from numpy import equal
 
 grammaire = lark.Lark(r"""
+
 exp : SIGNED_NUMBER              -> exp_nombre
 | IDENTIFIER                     -> exp_var
 | IDENTIFIER "." IDENTIFIER      -> exp_var_struct
 | exp OPBIN exp                  -> exp_opbin
 | "(" exp ")"                    -> exp_par
 | IDENTIFIER "(" var_list ")"    -> exp_function
+
 com : dec                        -> declaration
 | IDENTIFIER "=" exp ";"         -> assignation
 | IDENTIFIER "." IDENTIFIER "=" exp ";" -> assignation_struct_var
@@ -15,25 +17,40 @@ com : dec                        -> declaration
 | "while" "(" exp ")" "{" bcom "}"  -> while
 | "print" "(" exp ")" ";"              -> print
 | "printf" "(" exp ")" ";"             -> printf
-| IDENTIFIER "(" exp_list ")" ";"
+| IDENTIFIER "(" exp_list ")" ";"      -> function_call
+
 bdec : (dec)*
+
 bcom : (com)*
+
 dec : TYPE IDENTIFIER ";" -> declaration
-| TYPE IDENTIFIER "=" exp ";" -> declaration_expresion
 | "struct" IDENTIFIER IDENTIFIER ";" -> declaration_struct
+| TYPE IDENTIFIER "=" exp ";" -> declaration_expression
+| "struct" IDENTIFIER IDENTIFIER "=" exp ";" -> declaration_struct_expression
+
 struct : "struct" IDENTIFIER "{" bdec "}" ";"
+
 function : TYPE IDENTIFIER "(" var_list ")" "{" bcom "return" exp ";" "}" -> function_return
 | "void" IDENTIFIER "(" var_list ")" "{" bcom "}"  -> function_void
+
 bstruct : (struct)*
+
 bfunction : (function)*
+
 prg : bstruct bfunction "int" "main" "(" var_list ")" "{" bcom "return" "(" exp ")" ";"  "}" 
+
 exp_list: -> vide
-| exp ("," exp)*  -> aumoinsune
+| exp ("," exp)*  -> at_least_one_expression
+
 var_list :                       -> vide
-| (TYPE IDENTIFIER)("," (TYPE IDENTIFIER))*  -> aumoinsune
+| ((TYPE IDENTIFIER)|(IDENTIFIER IDENTIFIER))("," ((TYPE IDENTIFIER)|(IDENTIFIER IDENTIFIER)))*  -> at_least_one_variable
+
 IDENTIFIER : /[a-zA-Z][a-zA-Z0-9]*/
-TYPE : "int" | "double" | "float" | "bool" | "char" | "long" | IDENTIFIER
+
+TYPE : "int" | "double" | "float" | "bool" | "char" | "long"
+
 OPBIN : /[+\-*>]/
+
 %import common.WS
 %import common.SIGNED_NUMBER
 %ignore WS
@@ -62,10 +79,15 @@ def asm_exp(e):
 def pp_exp(e):
     if e.data in {"exp_nombre", "exp_var"}:
         return e.children[0].value
+    elif e.data == "exp_var_struct":
+        return e.children[0].value + '.' + e.children[1].value
     elif e.data == "exp_par":
         return f"({pp_exp(e.children[0])})"
     else:
         return f"{pp_exp(e.children[0])} {e.children[1].value} {pp_exp(e.children[2])}"
+
+def pp_exp_list(l):
+    return ", ".join([pp_exp(exp) for exp in l.children])
 
 def vars_exp(e):
     if e.data  == "exp_nombre":
@@ -125,8 +147,10 @@ fin{n} : nop
         """
 
 def pp_com(c):
-    if(c.data == "declaration"):
-        print("Declaration")
+    if c.data == "declaration":
+        return pp_dec(c.children[0])
+    elif c.data == "assignation_struct_var":
+        return f"{c.children[0]}.{c.children[1]} = {pp_exp(c.children[2])};"
     elif c.data == "assignation":
         return f"{c.children[0].value} = {pp_exp(c.children[1])};"
     elif c.data == "if":
@@ -136,7 +160,9 @@ def pp_com(c):
         x = f"\n{pp_bcom(c.children[1])}"
         return f"while ({pp_exp(c.children[0])}) {{{x}}}"
     elif c.data == "print":
-        return f"print({pp_exp(c.children[0])})"
+        return f"print({pp_exp(c.children[0])});"
+    elif c.data == "function_call":
+        return f"{c.children[0]}({pp_exp_list(c.children[1])});"
 
 
 def vars_com(c):
@@ -197,21 +223,7 @@ def vars_prg(p):
     R = vars_exp(p.children[2])
     return L | C | R
 
-def pp_prg(p):
-    print(pp_struct(p.children[0].children[0]))
-    print(pp_bfunction(p.children[1]))
-    print ((p.children[3]))
-
-    
-    #L = pp_var_list(p.children[0])
-    #C = pp_bcom(p.children[1])
-    #R = pp_exp(p.children[2])
-    #print (p)
-    return 
-    #"main( %s ) { %s return(%s);\n}" % (L, C, R)
-
 def pp_struct(s):
-
     Y=s.children[0]
     L=pp_bdec(s.children[1])
     return "struct %s {\n%s \n };" % (Y,L)
@@ -221,34 +233,45 @@ def pp_bstruct(bs):
 
 
 def pp_dec(d):
-    
-    return f"{(d.children[0])} {(d.children[1])};"
-    
+    if d.data == "declaration":
+        return f"{(d.children[0])} {(d.children[1])};"
+    elif d.data == "declaration_struct":
+        return f"struct {d.children[0]} {d.children[1]};"
+    elif d.data == "declaration_expression":
+        return f"{d.children[0]} {d.children[1]} = {pp_exp(d.children[2])};"
+    elif d.data == "declaration_struct_expression":
+        return f"struct {d.children[0]} {d.children[1]} = {pp_exp(d.children[2])};"
 
 def pp_bdec(bdec):
     return "\n".join([pp_dec(d) for d in bdec.children])
 
 def pp_function(f):
     if f.data == "function_void":
-        N=f.children[0]
-        L = pp_var_list(f.children[1])
-        B = pp_bcom(f.children[2])
-        return "void %s ( %s ) {\n %s \n}" % (N, L, B)
-    if f.data =="function_return":
+        name = f.children[0]
+        var_list = pp_var_list(f.children[1])
+        command_block = pp_bcom(f.children[2])
+        return "void %s ( %s ) {\n %s \n}" % (name, var_list, command_block)
+        
+    elif f.data =="function_return":
         A=f.children[0]
         B=f.children[1]
         C=pp_var_list(f.children[2])
         D=pp_bcom(f.children[3])
         E=pp_var_list(f.children[4])
         return "%s %s ( %s ) {\n%s \nreturn %s;\n}" % (A, B, C,D,E)
+    
 def pp_bfunction(bf):
     return "\n".join([pp_function(d) for d in bf.children])
 
+def pp_prg(p):
+    print(pp_bstruct(p.children[0])) #bstruct
+    print(pp_bfunction(p.children[1])) #bfunction
+    print(f"int main ({pp_var_list(p.children[2])}){{") #main arguments (var_list)
+    print(pp_bcom(p.children[3])) #main body (bcom)
+    print(f"return({pp_exp(p.children[4])});\n}}") #return exp
+    
 
 ast = grammaire.parse("""
-   
-
-
 struct Books {
    char  title;
    char  author;
@@ -257,8 +280,10 @@ struct Books {
 };
 
 void printBook( Books book ) {
-
-
+    print(book.title);
+    print(book.author);
+    print(book.subject);
+    print(book.bookId);
 }
 
 int main(int A,int B ) {
@@ -274,11 +299,9 @@ int main(int A,int B ) {
 
    return (0);
 }
-
-
 """)
-asm = pp_prg(ast)
-print(asm)
+pp_prg(ast)
+#print(asm)
 #f = open("ouf.asm", "w")
 #f.write(asm)
 #f.close()
