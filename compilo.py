@@ -1,5 +1,5 @@
 import lark
-from numpy import equal
+#from numpy import equal
 
 grammaire = lark.Lark(r"""
 
@@ -54,7 +54,7 @@ OPBIN : /[+\-*>]/
 %import common.WS
 %import common.SIGNED_NUMBER
 %ignore WS
-""",start="prg")
+""",start="com")
 
 op = {'+' : 'add', '-' : 'sub'}
 
@@ -65,6 +65,8 @@ def asm_exp(e):
         return f"mov rax, [{e.children[0].value}]\n"
     elif e.data == "exp_par":
         return asm_exp(e.children[0])
+    elif e.data=="exp_function":
+        return asm_function(e.children[0])
     else:
         E1 = asm_exp(e.children[0])
         E2 = asm_exp(e.children[2])
@@ -144,6 +146,11 @@ fin{n} : nop
         mov rdi, fmt
         mov rsi, rax
         call printf
+        """
+    elif c.data =="function_call":
+        print(c)
+        return f""" 
+
         """
 
 def pp_com(c):
@@ -231,6 +238,15 @@ def pp_struct(s):
 def pp_bstruct(bs):
     return "\n".join([pp_struct(d) for d in bs.children])
 
+def asm_dec(d):
+    if d.data == "declaration":
+        D= d.children[0]
+    elif d.data == "declaration_struct":
+        return
+    elif d.data == "declaration_expression":
+        return
+    elif d.data == "declaration_struct_expression":
+        return
 
 def pp_dec(d):
     if d.data == "declaration":
@@ -272,35 +288,14 @@ def pp_prg(p):
     
 
 ast = grammaire.parse("""
-struct Books {
-   char  title;
-   char  author;
-   char  subject;
-   int   bookId;
-};
-
-void printBook( Books book ) {
-    print(book.title);
-    print(book.author);
-    print(book.subject);
-    print(book.bookId);
-}
-
-int main(int A,int B ) {
-
-   struct Books Book1;        
-   struct Books Book2;        
-   Book1.bookId = 6495407;
-   Book2.bookId = 6495700;
- 
-   printBook( Book1 );
-
-   printBook( Book2 );
-
-   return (0);
-}
+struct(){
+    }
+void test(){
+    }
+int main(){
+    }
 """)
-pp_prg(ast)
+asm_prg(ast)
 #print(asm)
 #f = open("ouf.asm", "w")
 #f.write(asm)
