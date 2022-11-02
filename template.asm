@@ -7,7 +7,6 @@ argc :dq 0
 argv : dq 0
 DECL_VARS
 
-
 section .text
 
 FUNCTIONS

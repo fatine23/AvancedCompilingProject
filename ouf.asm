@@ -1,13 +1,10 @@
 extern printf
 extern  atoi 
+global main 
 section .data 
 fmt :db "%d", 10 ,0
 argc :dq 0
 argv : dq 0
-book.title : db 0 
-book.author : db 0 
-book.subject : db 0 
-book.bookId : dd 0 
 x : dd 0 
 y : dd 0 
 id : dd 0 
@@ -21,7 +18,9 @@ myBook.bookId : dd 0
 
 
 section .text
-global main 
+
+
+
 main : 
     push rbp
     mov [argc], rdi 
@@ -40,9 +39,6 @@ main :
         mov [y], rax
          
     
-        mov rax, 't'
-        mov [title], rax
-        
         mov rax, 'a'
         mov [author], rax
         
@@ -52,6 +48,9 @@ main :
         mov rax, 100
 
         mov [id], rax        
+        
+        mov rax, 't'
+        mov [title], rax        
         
         mov rax, [id]
 

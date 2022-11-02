@@ -17,7 +17,6 @@ com : dec                        -> declaration
 | "if" "(" exp ")" "{" bcom "}"  -> if
 | "while" "(" exp ")" "{" bcom "}"  -> while
 | "print" "(" exp ")" ";"              -> print
-| "printf" "(" exp ")" ";"             -> printf
 | IDENTIFIER "(" exp_list ")" ";"      -> function_call
 
 bdec : (dec)*
@@ -168,7 +167,7 @@ def pp_exp(e):
     elif e.data == "exp_par":
         return f"({pp_exp(e.children[0])})"
     elif e.data == "exp_function":
-        return f"{e.children[0]}({pp_exp_list(e.children[1])})"
+        return f"{e.children[0].value}({pp_exp_list(e.children[1])})"
     elif e.data == "exp_opbin":
         return f"{pp_exp(e.children[0])} {e.children[1].value} {pp_exp(e.children[2])}"
 
@@ -226,7 +225,7 @@ def pp_com(c):
     if c.data == "declaration":
         return pp_dec(c.children[0])
     elif c.data == "assignation_struct_var":
-        return f"\t{c.children[0]}.{c.children[1]} = {pp_exp(c.children[2])};"
+        return f"\t{c.children[0].value}.{c.children[1].value} = {pp_exp(c.children[2])};"
     elif c.data == "assignation":
         return f"\t{c.children[0].value} = {pp_exp(c.children[1])};"
     elif c.data == "if":
@@ -238,7 +237,7 @@ def pp_com(c):
     elif c.data == "print":
         return f"\tprint({pp_exp(c.children[0])});"
     elif c.data == "function_call":
-        return f"\t{c.children[0]}({pp_exp_list(c.children[1])});"
+        return f"\t{c.children[0].value}({pp_exp_list(c.children[1])});"
 
 def vars_com(c):
     if c.data == "declaration":
@@ -416,6 +415,8 @@ def asm_prg(p):
     moule = moule.replace("BODY", C)
     E = asm_exp(p.children[4])
     moule = moule.replace("RETURN", E)
+    F = "" #TO DO asm_bfunction
+    moule = moule.replace("FUNCTIONS", F)
     #D = "\n".join([f"{v} : dq 0" for v in variables.keys()])
     D = asm_decl_vars()
     moule = moule.replace("DECL_VARS", D)

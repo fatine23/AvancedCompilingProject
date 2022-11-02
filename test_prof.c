@@ -5,19 +5,13 @@ struct Book{
    int   bookId;
 };
 
-void printBook( Book book ) {
-    print(book.title);
-    print(book.author);
-    print(book.subject);
-    print(book.bookId);
-}
-
 int main(int x, int y){
     int id;
-    char title = 't';
+    char title;
     char author = 'a';
     char subject = 's';
     id = 100;
+    title = 't';
     print(id);
     print(title);
     print(author);
