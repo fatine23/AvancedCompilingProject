@@ -87,6 +87,7 @@ variables = {}
             "parameter_name" : "parameter_type",
             ...
         },
+        "return": "return_type"
         ...
     },
     ...
@@ -384,6 +385,14 @@ def asm_decl_basic_var(variable, variable_type):
     elif variable_type in ["double", "long"]:
         return f"{variable} : dq 0 \n"
 
+def asm_decl_struct_var(variable, member_name, member_type):
+    if member_type == "char":
+        return f"{variable}.{member_name} : db 0 \n"
+    elif member_type in ["int", "float"]:
+        return f"{variable}.{member_name} : dd 0 \n"
+    elif member_type in ["double", "long"]:
+        return f"{variable}.{member_name} : dq 0 \n"
+
 def asm_decl_vars():
     asm = ""
     for var, var_type in variables.items():
@@ -393,7 +402,7 @@ def asm_decl_vars():
             if var_type not in structs.keys():
                 raise Exception(f"{var_type} type is not defined")
             for member, member_type in structs[var_type].items():
-                asm += asm_decl_basic_var(member, member_type)
+                asm += asm_decl_struct_var(var, member, member_type)
     return asm
 
 def asm_prg(p):

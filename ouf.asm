@@ -4,10 +4,20 @@ section .data
 fmt :db "%d", 10 ,0
 argc :dq 0
 argv : dq 0
+book.title : db 0 
+book.author : db 0 
+book.subject : db 0 
+book.bookId : dd 0 
 x : dd 0 
 y : dd 0 
-i : dd 0 
-c : db 0 
+id : dd 0 
+title : db 0 
+author : db 0 
+subject : db 0 
+myBook.title : db 0 
+myBook.author : db 0 
+myBook.subject : db 0 
+myBook.bookId : dd 0 
 
 
 section .text
@@ -30,18 +40,42 @@ main :
         mov [y], rax
          
     
-        mov rax, '$'
-        mov [c], rax
+        mov rax, 't'
+        mov [title], rax
         
-        mov rax, [i]
+        mov rax, 'a'
+        mov [author], rax
+        
+        mov rax, 's'
+        mov [subject], rax
+        
+        mov rax, 100
+
+        mov [id], rax        
+        
+        mov rax, [id]
 
         mov rdi, fmt
         mov rsi, rax
         call printf
         
-        mov rax, 100
+        mov rax, [title]
 
-        mov [i], rax        
+        mov rdi, fmt
+        mov rsi, rax
+        call printf
+        
+        mov rax, [author]
+
+        mov rdi, fmt
+        mov rsi, rax
+        call printf
+        
+        mov rax, [subject]
+
+        mov rdi, fmt
+        mov rsi, rax
+        call printf
          
     
         mov rax, [y]
