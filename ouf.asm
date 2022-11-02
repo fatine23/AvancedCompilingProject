@@ -1,10 +1,14 @@
-extern printf 
-section data 
+extern printf
+extern  atoi 
+section .data 
 fmt :db "%d", 10 ,0
 argc :dq 0
 argv : dq 0
-x : dq 0
-y : dq 0
+x : dd 0 
+y : dd 0 
+i : dd 0 
+c : db 0 
+
 
 section .text
 global main 
@@ -26,38 +30,28 @@ main :
         mov [y], rax
          
     
-        debut1 : mov rax, [x]
+        mov rax, '$'
+        mov [c], rax
+        
+        mov rax, [i]
 
-        cmp rax, 0
-        jz fin1
+        mov rdi, fmt
+        mov rsi, rax
+        call printf
         
-        
-        mov rax, 1
+        mov rax, 100
+
+        mov [i], rax        
+         
+    
+        mov rax, [y]
 
         push rax
         mov rax, [x]
 
         pop rbx
-        sub rax, rbx
-        
-        mov [x], rax        
-        
-        
-        mov rax, 1
-
-        push rax
-        mov rax, [y]
-
-        pop rbx
         add rax, rbx
-        
-        mov [y], rax        
-        
-        jmp debut1
-fin1 : nop
- 
-    mov rax, [y]
- 
+         
     mov rdi , fmt 
     mov rsi , rax
     call printf 
