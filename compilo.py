@@ -1,5 +1,5 @@
 import lark
-#from numpy import equal
+from numpy import equal
 
 grammaire = lark.Lark(r"""
 
@@ -54,7 +54,7 @@ OPBIN : /[+\-*>]/
 %import common.WS
 %import common.SIGNED_NUMBER
 %ignore WS
-""",start="com")
+""",start="prg")
 
 op = {'+' : 'add', '-' : 'sub'}
 
@@ -219,11 +219,6 @@ fin{n} : nop
         mov rdi, fmt
         mov rsi, rax
         call printf
-        """
-    elif c.data =="function_call":
-        print(c)
-        return f""" 
-
         """
 
 def pp_com(c):
@@ -449,4 +444,3 @@ asm = asm_prg(ast)
 f = open("ouf.asm", "w")
 f.write(asm)
 f.close()
-
