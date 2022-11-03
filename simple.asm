@@ -1,12 +1,13 @@
 extern printf
-section.data 
+section .data 
 hello : db"helle world %d" ,10, 0
 fmt :db "%s" , 10, 0
 argc :dq 0
 argv : dq 0
 
+
 section .text
-globale main 
+global main 
 main: 
     push rbp
     mov[argc], rdi

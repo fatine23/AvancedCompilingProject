@@ -1,13 +1,26 @@
-extern printf 
-section data 
+extern printf
+extern  atoi 
+global main 
+section .data 
 fmt :db "%d", 10 ,0
 argc :dq 0
 argv : dq 0
-x : dq 0
-y : dq 0
+x : dd 0 
+y : dd 0 
+id : dd 0 
+title : db 0 
+author : db 0 
+subject : db 0 
+myBook.title : db 0 
+myBook.author : db 0 
+myBook.subject : db 0 
+myBook.bookId : dd 0 
+
 
 section .text
-global main 
+
+
+
 main : 
     push rbp
     mov [argc], rdi 
@@ -26,38 +39,52 @@ main :
         mov [y], rax
          
     
-        debut1 : mov rax, [x]
+        mov rax, 'a'
+        mov [author], rax
+        
+        mov rax, 's'
+        mov [subject], rax
+        
+        mov rax, 100
 
-        cmp rax, 0
-        jz fin1
+        mov [id], rax        
         
+        mov rax, 't'
+        mov [title], rax        
         
-        mov rax, 1
+        mov rax, [id]
+
+        mov rdi, fmt
+        mov rsi, rax
+        call printf
+        
+        mov rax, [title]
+
+        mov rdi, fmt
+        mov rsi, rax
+        call printf
+        
+        mov rax, [author]
+
+        mov rdi, fmt
+        mov rsi, rax
+        call printf
+        
+        mov rax, [subject]
+
+        mov rdi, fmt
+        mov rsi, rax
+        call printf
+         
+    
+        mov rax, [y]
 
         push rax
         mov rax, [x]
 
         pop rbx
-        sub rax, rbx
-        
-        mov [x], rax        
-        
-        
-        mov rax, 1
-
-        push rax
-        mov rax, [y]
-
-        pop rbx
         add rax, rbx
-        
-        mov [y], rax        
-        
-        jmp debut1
-fin1 : nop
- 
-    mov rax, [y]
- 
+         
     mov rdi , fmt 
     mov rsi , rax
     call printf 
