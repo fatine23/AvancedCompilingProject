@@ -5,11 +5,16 @@ struct Book{
    int   bookId;
 };
 
-int main(int x, int y){
+int blabla(int a,int b){
+    return(a+b);
+}
+
+int main(int x, int y,int z){
     int id;
     char title;
     char author = 'a';
     char subject = 's';
+    int u;
     id = 100;
     title = 't';
     print(id);
@@ -17,5 +22,10 @@ int main(int x, int y){
     print(author);
     print(subject);
     struct Book myBook;
-    return (x + y);
+    print(y);
+    x=blabla(x,y);
+    print(x);
+    print(y);
+    print(z);
+    return (x+y+z);
 }

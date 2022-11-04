@@ -130,10 +130,9 @@ def asm_exp(e):
     elif e.data == "exp_par":
         return asm_exp(e.children[0])
     elif e.data == "exp_function":
-        function_name = e.childre[0].value
+        function_name = e.children[0].value
         n_parameters = len(functions[function_name]['parameters'])
         exp_list = e.children[1].children
-        
         if len(exp_list) != n_parameters:
             raise Exception(f"error: wrong number of parameters to call {function_name}")
         
@@ -329,6 +328,41 @@ def vars_bdec(bdec):
         S = S | vars_dec(dec)
     return S
 
+def asm_function(f):
+    if f.data == "function_void":
+        name = f.children[0]
+        command_block=asm_bcom(f.children[2])
+        s=f"""
+{name}:
+    push rbp
+    mov rbp,rsp
+    """  
+        s=s+f"""
+        {command_block}
+        pop rbp
+        ret
+            """
+        return s
+    elif f.data =="function_return":
+        TYPE =f.children[0]
+        name=f.children[1]
+        command_block=asm_bcom(f.children[3])
+        EXP=asm_exp(f.children[4])
+        s=f"""
+{name}:
+    push rbp
+    mov rbp,rsp
+    {command_block}
+    """
+        s=s+EXP
+        s=s+f"""
+    pop rbp
+    ret
+            """
+        return(s)
+
+        
+
 def pp_function(f):
     if f.data == "function_void":
         name = f.children[0]
@@ -358,6 +392,9 @@ def vars_function(f):
 
 def pp_bfunction(bf):
     return "\n".join([pp_function(d) for d in bf.children])
+
+def asm_bfunction(bf):
+    return "\n".join([asm_function(d) for d in bf.children])
 
 def vars_bfunction(bf):
     for f in bf.children:
@@ -415,7 +452,7 @@ def asm_prg(p):
     moule = moule.replace("BODY", C)
     E = asm_exp(p.children[4])
     moule = moule.replace("RETURN", E)
-    F = "" #TO DO asm_bfunction
+    F = asm_bfunction(p.children[1]) #TO DO asm_bfunction
     moule = moule.replace("FUNCTIONS", F)
     #D = "\n".join([f"{v} : dq 0" for v in variables.keys()])
     D = asm_decl_vars()
