@@ -4,7 +4,7 @@ hello : db"helle world %d" ,10, 0
 fmt :db "%s" , 10, 0
 argc :dq 0
 argv : dq 0
-
+x : dq 54
 
 section .text
 global main 
@@ -19,7 +19,8 @@ main:
     mov rbx , [argv]
     mov rdi , [rbx+8]
     call atoi 
-    mov rdi , hello 
+    mov rdi , hello
+    imul qword -1  
     mov rsi , rax
     call printf 
     pop rbp 
