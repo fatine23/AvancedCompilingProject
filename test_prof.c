@@ -14,6 +14,16 @@ void printBook( Book book ) {
     print(book.profit);
 }
 
+struct Book getNewBook(){
+    struct Book newBook;
+    newBook.bookId = 13;
+    newBook.title = 'n';
+    newBook.rating = 5.0;
+    newBook.critRating = 4.5;
+    newBook.profit = 1000000;
+    return newBook;
+}
+
 double get2(){
     return 2.0;
 }
@@ -61,5 +71,7 @@ int main() {
 
     print(get2());
     print(get5());
+
+    printBook(getNewBook());
     return (0);
 }

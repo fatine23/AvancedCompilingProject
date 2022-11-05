@@ -33,8 +33,9 @@ dec : TYPE IDENTIFIER ";" -> declaration
 
 struct : "struct" IDENTIFIER "{" bdec "}" ";"
 
-function : TYPE IDENTIFIER "(" var_list ")" "{" bcom "return" exp ";" "}" -> function_return
-| "void" IDENTIFIER "(" var_list ")" "{" bcom "}"  -> function_void
+function : TYPE IDENTIFIER "(" var_list ")" "{" bcom "return" exp ";" "}"        -> function_return
+| "void" IDENTIFIER "(" var_list ")" "{" bcom "}"                                -> function_void
+| "struct" IDENTIFIER IDENTIFIER "(" var_list ")" "{" bcom  "return" exp ";" "}" -> function_return_struct
 
 bstruct : (struct)*
 
@@ -118,6 +119,21 @@ def verify_struct_member(var_name ,member_name):
     if member_name not in structs[variables[var_name]].keys():
         raise Exception(f"error: {member_name} is not a member of {variables[var_name]}")
 
+def get_no_par_expression(exp):
+    while exp.data == "exp_par": exp = exp.children[0]
+    return exp
+
+def verify_struct_expression(struct_name, exp):
+    exp = get_no_par_expression(exp)
+    if (exp.data not in ["exp_var", "exp_function"] #other types of expression are not valid to return structs
+        or (exp.data == "exp_var" and variables[exp.children[0].value] != struct_name) #variable's return type is wrong
+        or (exp.data == "exp_function" and functions[exp.children[0].children[0]]['return'] != struct_name)): #function returns wrong type
+        raise Exception(f"error: wrong type of expression, expected struct expression")
+
+def get_struct_var_name_from_expression(exp):
+    while exp.data == "exp_par": exp = exp.children[0]
+    return exp.children[0].value if exp.data == "exp_var" else exp.children[0].children[0].value
+
 def asm_assign_struct(left_variable, right_variable, struct_name):
     asm = ""
     for member, member_type in structs[struct_name].items():
@@ -128,7 +144,7 @@ def asm_assign_struct(left_variable, right_variable, struct_name):
     {f'mov [ans{"32" if member_type == "float" else "64"}], rax' if member_type in ["float", "double"] else ""}
     {f'mov rax, [ans{"32" if member_type == "float" else "64"}]' if member_type in ["float", "double"] else ""}
     mov [{left_variable}.{member}], rax
-    """)
+""")
     return asm
 
 def type_exp(e):
@@ -177,9 +193,11 @@ def asm_function_call(fc):
         if parameter_type in basic_types:
             asm += asm_assignation(parameter_name, expression)
         else:
-            if expression.data != "exp_var" or variables[expression.children[0]] in basic_types:
-                raise Exception(f"error: wrong type, expected struct {parameter_type} variable")
-            asm += asm_assign_struct(parameter_name, expression.children[0], parameter_type)
+            verify_struct_expression(parameter_type, expression)
+            if expression.data == "exp_function":
+                asm += asm_function_call(expression.children[0])
+            right_struct = get_struct_var_name_from_expression(expression) 
+            asm += asm_assign_struct(parameter_name, right_struct, parameter_type)
     asm += f"call {function_name}\n"
     return asm
 
@@ -195,7 +213,7 @@ def asm_exp(e):
     mov [ans32], rax
     mov rax, [const{constant_index}_64]
     mov [ans64], rax
-    """)    
+""")    
     elif e.data == "exp_char":
         return (f"mov rax, '{e.children[0].value}'\n")
     elif e.data == "exp_var":
@@ -244,7 +262,7 @@ def asm_exp(e):
     {operator} {rigth_word_type} [ans{rigth_bit_size}]
     fst dword [ans32]
     fstp qword [ans64]
-    """)
+""")
             else:
                 operator = op_float[e.children[1].value]
                 if f_in_left:
@@ -268,7 +286,7 @@ def asm_exp(e):
     {operator} st1
     fst dword [ans32]
     fstp qword [ans64]
-    """)
+""")
         else:
             return (
     f"""
@@ -277,7 +295,7 @@ def asm_exp(e):
     {E1}
     pop rbx
     {op[e.children[1].value]} rax, rbx
-    """)
+""")
 
 def pp_exp(e):
     if e.data in ["exp_int", "exp_float", "exp_var"]:
@@ -322,11 +340,16 @@ def next():
 def asm_assignation(var_name, expression):
     var_type = variables[var_name]
     types = type_exp(expression)
-    if var_type not in basic_types:
-        if var_type not in types:
-            raise Exception(f"error: wrong type to assign to {var_type}")
-        return asm_assign_struct(var_name, expression.children[0].value, var_type) 
-    asm = asm_exp(expression)+"\n"
+    expression = get_no_par_expression(expression)
+    if var_type not in basic_types: #struct
+        verify_struct_expression(var_type, expression)
+        asm = ""
+        if expression.data == "exp_function":
+            asm += asm_function_call(expression.children[0])
+        right_struct = get_struct_var_name_from_expression(expression)
+        asm += asm_assign_struct(var_name, right_struct, var_type) 
+        return asm
+    asm = asm_exp(expression)
     if "double" in types or "float" in types:
         if var_type not in types:
             raise Exception(f"error: invalid type in assignation")
@@ -406,7 +429,7 @@ def asm_print_call(exp):
     mov rsi, rax
     mov rax, 1
     call printf
-    """)
+""")
 
     elif exp_type == "double":
         return (
@@ -416,7 +439,7 @@ def asm_print_call(exp):
     movq xmm0, qword [ans64]
     mov rax, 1
     call printf
-    """)
+""")
 
     else:
         return (
@@ -428,7 +451,7 @@ def asm_print_call(exp):
     movq xmm0, qword [ans64]
     mov rax, 1
     call printf
-    """)
+""")
 
 def asm_com(c):
     if c.data == "declaration":
@@ -544,17 +567,7 @@ def asm_dec(d):
     var_type = d.children[0].value
     exp = d.children[2]
     verify_var(var_name)
-    if d.data == "declaration_expression":
-        return asm_assignation(var_name, exp)
-    elif d.data == "declaration_struct_expression":
-        #verify_struct_member(var_name, var_type)
-        left_struct = var_name
-        struct_name = var_type
-        right_struct = d.children[2].children[0].value
-        type_of_expresion = d.children[2].data
-        if type_of_expresion != "exp_var" or variables[right_struct] != struct_name:
-            raise Exception(f"invalid expression to assign to {left_struct}")
-        return asm_assign_struct(left_struct, right_struct, struct_name)
+    return asm_assignation(var_name, exp)
 
 def pp_bdec(bdec):
     return "\n".join([pp_dec(d) for d in bdec.children])
@@ -572,13 +585,13 @@ def pp_function(f):
         command_block = pp_bcom(f.children[2])
         return "void %s(%s){\n%s\n}" % (name, var_list, command_block)
         
-    elif f.data =="function_return":
+    elif f.data in ["function_return", "function_return_struct"]:
         A=f.children[0]
         B=f.children[1]
         C=pp_var_list(f.children[2])
         D=pp_bcom(f.children[3])
         E=pp_exp(f.children[4])
-        return "%s %s(%s){%s\n\treturn(%s);\n}" % (A, B, C,D,E)
+        return f"{'struct' if f.data == 'function_return_struct' else ''} {A} {B}({C}){{{D}\n\treturn({E});\n}}"
 
 def asm_function(f):
     if f.data == "function_void":
@@ -593,7 +606,7 @@ def asm_function(f):
         {command_block}
         leave
         ret
-            """
+"""
         return s
     elif f.data =="function_return":
         TYPE =f.children[0]
@@ -610,15 +623,36 @@ def asm_function(f):
         s=s+f"""
     leave
     ret
-            """
+"""
         return(s)
-
+    elif f.data == "function_return_struct":
+        struct_name = f.children[0].value
+        function_name = f.children[1]
+        bcom = asm_bcom(f.children[3])
+        exp = f.children[4]
+        verify_struct_expression(struct_name, exp)
+        asm_return = ""
+        if exp.data == "exp_var":
+            asm_return = asm_assign_struct(function_name, exp.children[0].value, struct_name)
+        elif exp.data == "exp_function":
+            asm_return = asm_assign_struct(function_name, exp.children[0].children[0], struct_name) 
+        return (
+    f"""
+{function_name}:
+    push rbp
+    mov rbp,rsp
+    {bcom}
+    {asm_return}
+    leave
+    ret
+""")
+        
 def vars_function(f):
     name = f.children[0].value if f.data == "function_void" else f.children[1].value
     var_list = f.children[1] if f.data == "function_void" else f.children[2]
     return_type = "void" if f.data == "function_void" else f.children[0].value
 
-    if return_type != "void" and return_type not in basic_types:
+    if f.data == "function_return_struct":
         variables[name] = return_type
 
     functions[name] = {'parameters': {}}
@@ -627,7 +661,7 @@ def vars_function(f):
     functions[name]['return'] = return_type
     vars_bcom(f.children[2 if f.data == "function_void" else 3])
     vars_var_list(var_list)
-    if f.data == "function_return":
+    if f.data in ["function_return", "function_return_struct"]:
         vars_exp(f.children[4])
 
 def pp_bfunction(bf):
@@ -718,7 +752,7 @@ def asm_prg(p):
         xor rax, rax
         call atoi
         mov [{v}], rax
-        """
+"""
         s = s + e
     moule = moule.replace("INIT_VARS", s)    
     return moule
