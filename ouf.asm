@@ -57,6 +57,11 @@ i : resd 1
 c :resb 1 
 f : resd 1 
 l : resq 1 
+myNewBook.bookId : resd 1 
+myNewBook.title : resb 1 
+myNewBook.rating : resd 1 
+myNewBook.critRating : resq 1 
+myNewBook.profit : resq 1 
 
 
 
@@ -463,24 +468,49 @@ call getNewBook
     mov rax, [getNewBook.bookId]
     
     
-    mov [book.bookId], rax
+    mov [myNewBook.bookId], rax
 
     mov rax, [getNewBook.title]
     
     
-    mov [book.title], rax
+    mov [myNewBook.title], rax
 
     mov rax, [getNewBook.rating]
     mov [ans32], rax
     mov rax, [ans32]
-    mov [book.rating], rax
+    mov [myNewBook.rating], rax
 
     mov rax, [getNewBook.critRating]
     mov [ans64], rax
     mov rax, [ans64]
-    mov [book.critRating], rax
+    mov [myNewBook.critRating], rax
 
     mov rax, [getNewBook.profit]
+    
+    
+    mov [myNewBook.profit], rax
+
+    mov rax, [myNewBook.bookId]
+    
+    
+    mov [book.bookId], rax
+
+    mov rax, [myNewBook.title]
+    
+    
+    mov [book.title], rax
+
+    mov rax, [myNewBook.rating]
+    mov [ans32], rax
+    mov rax, [ans32]
+    mov [book.rating], rax
+
+    mov rax, [myNewBook.critRating]
+    mov [ans64], rax
+    mov rax, [ans64]
+    mov [book.critRating], rax
+
+    mov rax, [myNewBook.profit]
     
     
     mov [book.profit], rax

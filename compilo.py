@@ -12,13 +12,13 @@ exp : SIGNED_INT                 -> exp_int
 | "(" exp ")"                    -> exp_par
 | function_call                  -> exp_function
 
-com : dec                        -> declaration
-| IDENTIFIER "=" exp ";"         -> assignation
-| IDENTIFIER "." IDENTIFIER "=" exp ";" -> assignation_struct_var
-| "if" "(" exp ")" "{" bcom "}"  -> if
-| "while" "(" exp ")" "{" bcom "}"  -> while
-| "print" "(" exp ")" ";"              -> print
-| function_call ";"              -> function_call
+com : dec                                -> declaration
+| IDENTIFIER "=" exp ";"                 -> assignation
+| IDENTIFIER "." IDENTIFIER "=" exp ";"  -> assignation_struct_var
+| "if" "(" exp ")" "{" bcom "}"          -> if
+| "while" "(" exp ")" "{" bcom "}"       -> while
+| "print" "(" exp ")" ";"                -> print
+| function_call ";"                      -> function_call
 
 function_call : IDENTIFIER "(" exp_list ")"
 
@@ -63,10 +63,9 @@ OPBIN : /[+\-*>]/
 """,start="prg")
 
 op = {'+' : 'add', '-' : 'sub'}
-op_float = {'+' : 'fadd', '-' : 'fsub'}
-op_float_int = {'+': 'fiadd', '-': 'fisub'}
-basic_types = ["int", "char", "double", "float", "long"]
-basic_types_fmt = {"double": "fmtlf", "long": "fmti", "float": "fmtf", "int": "fmti", "char": "fmtc"}
+op_float = {'+' : 'fadd', '-' : 'fsub'} #operations entre deux floats
+basic_types = ["int", "char", "double", "float", "long"] 
+basic_types_fmt = {"double": "fmtlf", "long": "fmti", "float": "fmtf", "int": "fmti", "char": "fmtc"}#format pour le printf
 
 """ Dictionary to store member's for each declared struct
 {
@@ -131,7 +130,7 @@ def verify_struct_expression(struct_name, exp):
         raise Exception(f"error: wrong type of expression, expected struct expression")
 
 def get_struct_var_name_from_expression(exp):
-    while exp.data == "exp_par": exp = exp.children[0]
+    exp = get_no_par_expression(exp)
     return exp.children[0].value if exp.data == "exp_var" else exp.children[0].children[0].value
 
 def asm_assign_struct(left_variable, right_variable, struct_name):
@@ -176,7 +175,17 @@ def type_exp(e):
             return ["long", "int"]
         else:
             return ["char", "int"]
-        
+
+def asm_assign_struct_expression(var_name, expression, struct_name):
+    var_type = variables[var_name]
+    verify_struct_expression(var_type, expression)
+    asm = ""
+    if expression.data == "exp_function":
+        asm += asm_function_call(expression.children[0])
+    right_struct = get_struct_var_name_from_expression(expression)
+    asm += asm_assign_struct(var_name, right_struct, var_type)
+    return asm 
+
 def asm_function_call(fc):
     function_name = fc.children[0].value
     n_parameters = len(functions[function_name]['parameters'])
@@ -192,12 +201,8 @@ def asm_function_call(fc):
         expression = exp_list[i]
         if parameter_type in basic_types:
             asm += asm_assignation(parameter_name, expression)
-        else:
-            verify_struct_expression(parameter_type, expression)
-            if expression.data == "exp_function":
-                asm += asm_function_call(expression.children[0])
-            right_struct = get_struct_var_name_from_expression(expression) 
-            asm += asm_assign_struct(parameter_name, right_struct, parameter_type)
+        else: #struct
+            asm += asm_assign_struct_expression(parameter_name, expression, parameter_type)
     asm += f"call {function_name}\n"
     return asm
 
@@ -342,13 +347,7 @@ def asm_assignation(var_name, expression):
     types = type_exp(expression)
     expression = get_no_par_expression(expression)
     if var_type not in basic_types: #struct
-        verify_struct_expression(var_type, expression)
-        asm = ""
-        if expression.data == "exp_function":
-            asm += asm_function_call(expression.children[0])
-        right_struct = get_struct_var_name_from_expression(expression)
-        asm += asm_assign_struct(var_name, right_struct, var_type) 
-        return asm
+        return asm_assign_struct_expression(var_name, expression, var_type)
     asm = asm_exp(expression)
     if "double" in types or "float" in types:
         if var_type not in types:

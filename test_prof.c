@@ -6,7 +6,7 @@ struct Book{
     long  profit;
 };
 
-void printBook( Book book ) {
+void printBook( Book book) {
     print(book.bookId);
     print(book.title);
     print(book.rating);
@@ -60,7 +60,7 @@ int main() {
     long l = i + 12345667;
     book1.profit = l - book1.bookId;
     book2.profit = book1.profit - 100000;
-    print(l);
+    print( l );
     print(book1.profit);
     print(book2.profit);
 
@@ -72,6 +72,7 @@ int main() {
     print(get2());
     print(get5());
 
-    printBook(getNewBook());
+    struct Book myNewBook = getNewBook();
+    printBook( myNewBook );
     return (0);
 }
