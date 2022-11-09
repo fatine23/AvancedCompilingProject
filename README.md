@@ -29,5 +29,6 @@ Pour compiler il faut éxecuter les commandes suivantes dans le terminal.
 - ./make.sh
 - ./a.out
 
+Notre fichier correspondant au moule.asm s'appelle template.asm.
 --- 
 Vous trouverez un exemple de code C compilable  : test_prof.c
