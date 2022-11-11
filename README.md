@@ -1,26 +1,29 @@
-# AvancedCompilingProject
+# Advanced Compilation Project
 
 Sujet : 
 -  Typage statique 
 -  Structures 
 -  Fonctions 
 
-Nom : 
+Réalisé par : 
 - Jhon Sebastian ROJAS RODRIGUEZ
 - RHANEM Fatine
 - ENFROY Émilie
 
 ---
-Implémentation :
+Déroulement du travail  :
 
-- Nous avons créé des dictionnaires pour récupérer toutes les variables globales.
-- Pour le typage statique : int,double,float,char et long
-- Pour les fonctions : fonctions void, fonctions return et fonctions struct
+- Nous avons commencé par la grammaire dans laquelle nous avons défini presque toutes les possibilités pour la déclaration des variables , les expressions , les commandes , les structures et les fonctions .Par la suite, nous avons défini la grammaire de notre programme .
+- Nous avons créé des dictionnaires pour récupérer toutes les variables globales, les constantes , les structures et les fonctions.
+- Ensuite nous avons écrit les pp des différentes parties .
+- Nous avons écrit les assembleurs correspondants .
+- Nous avons impléménter le moule (qu'on a appelé template )
 
 Ce qui n'est pas encore implémenté : 
 
 - Les structures récursives et les structures dans des structures.
 - La multiplication et la division.
+
 
 ---
 
