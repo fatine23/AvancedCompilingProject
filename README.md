@@ -17,7 +17,7 @@ Déroulement du travail  :
 - Nous avons créé des dictionnaires pour récupérer toutes les variables globales, les constantes , les structures et les fonctions.
 - Ensuite nous avons écrit les pp des différentes parties .
 - Nous avons écrit les assembleurs correspondants .
-- Nous avons impléménter le moule (qu'on a appelé template )
+- Nous avons implémenté le moule (qu'on a appelé template )
 
 Ce qui n'est pas encore implémenté : 
 
